@@ -78,110 +78,51 @@ if($_SESSION['hak_akses'] == 1){
 
 	$bulantahun = $periode_bulan.$tahun;
 
-	#ambil data dosen
-	$query = "SELECT  a.nip as nip,
-			a.nama_pengajar as nama_pengajar,
-			a.induk_fakultas as induk_fakultas,
-			a.status_pegawai as status_pegawai,
-			a.jabatan_fungsional as jabatan_fungsional,
-			a.npwp as npwp,
-			a.skema as skema,
-			a.status_nikah as status_nikah,
-			a.golongan as golongan,
-			c.tot_sks_siak as tot_sks_siak,
-			c.tot_sks_ok as tot_sks_ok,
-			c.dk_bhmn as dk_bhmn,
-			c.ts_kesehatan as ts_kesehatan,
-			c.ts_inti_pengajaran as ts_inti_pengajaran,
-			c.ts_inti_penelitian as ts_inti_penelitian,
-			c.ts_struktural as ts_struktural,
-			c.xu_skema_inti as xu_skema_inti,
-			c.xf_skema_inti as xf_skema_inti,
-			c.xf_skema_lain as xf_skema_lain,
-			c.xf_lintas_fak as xf_lintas_fak,
-			c.honor_bhs_asing as honor_bhs_asing,
-			c.honor_bimbingan as honor_bimbingan,
-			c.tj_saf as tj_saf,
-			c.tj_inti_pengajaran as tj_inti_pengajaran,
-			c.insentif_khusus as insentif_khusus,
-			c.kl_bayar as kl_bayar,
-			c.tj_pajak as tj_pajak,
-			c.honor_bruto as honor_bruto,
-			c.pajak as pajak,
-			c.honor_neto as honor_neto,
-			c.potongan as potongan,
-			c.tunda_bayar as tunda_bayar,
-			c.jml_ditransfer as jml_ditransfer,
-			c.nama_rekening as nama_rekening,
-			c.nama_bank as nama_bank,
-			c.no_rekening as no_rekening,
-			c.total_xf as total_xf
-	FROM    pengajar a, gaji_detail c 
-	WHERE   a.nip = '$nip' and c.nip = a.nip and c.tahun = $tahun and c.bulan = '$periode_bulan' and a.tahun=c.tahun and a.bulan=c.bulan";
-
-	$sql = mysql_query ($query) or die ("error data pengajar: ".mysql_error());
-	while ($row = mysql_fetch_array($sql)) {
-		$nip =$row["nip"];
-		$nama_pengajar =$row["nama_pengajar"];
-		$induk_fakultas=$row["induk_fakultas"];
-		$status_pegawai=$row["status_pegawai"];
-		$jabatan_fungsional =$row["jabatan_fungsional"];
-		$npwp =$row["npwp"];
-		$skema =$row["skema"];
-		$status_nikah = $row["status_nikah"];
-		$golongan = $row["golongan"];
-		$totskssiak=$row["tot_sks_siak"];
-		$totsksok=$row["tot_sks_ok"];
-		$dk_bhmn =$row["dk_bhmn"];
-		$ts_kesehatan =$row["ts_kesehatan"];
-		$ts_inti_pengajaran =$row["ts_inti_pengajaran"];
-		$ts_inti_penelitian =$row["ts_inti_penelitian"];
-		$ts_struktural =$row["ts_struktural"];
-		$xu_skema_inti =$row["xu_skema_inti"];
-		$xf_skema_inti =$row["xf_skema_inti"];
-		$xf_skema_lain =$row["xf_skema_lain"];
-		$xf_lintas_fak =$row["xf_lintas_fak"];
-		$honor_bhs_asing =$row["honor_bhs_asing"];
-
-		$honor_bimbingan =$row["honor_bimbingan"];
-		$tj_saf =$row["tj_saf"];
-		$tj_inti_pengajaran =$row["tj_inti_pengajaran"];
-		$insentif_khusus =$row["insentif_khusus"];
-		$kl_bayar =$row["kl_bayar"];
-		$tj_pajak =$row["tj_pajak"];
-		$honor_bruto =$row["honor_bruto"];
-		$pajak =$row["pajak"];
-		$honor_neto =$row["honor_neto"];
-		$potongan =$row["potongan"];
-		$tunda_bayar =$row["tunda_bayar"];
-		$jml_ditransfer =$row["jml_ditransfer"];
-		$nama_rekening =$row["nama_rekening"];
-		$nama_bank =$row["nama_bank"];
-		$no_rekening =$row["no_rekening"];
-		$total_xf =$row["total_xf"];
-		$honor_struktural = $ts_struktural + $insentif_khusus;
-		$tot_xf_skema_lain = $xf_skema_lain + $xf_lintas_fak;
+	#ambil data dosen dari kalban
+	$sql = "SELECT DISTINCT jabatanfungsional, skema FROM kalban WHERE tahun = '$tahun' and bulan = '$periode_bulan' and nip = '$nip'";
+	$result = mysql_query ($sql) or die (mysql_error());
+	$kalban = array();
+	while ($row = mysql_fetch_assoc($result)){
+		$kalban[] = $row;
 	}
 
-	$tj_jabatan = $tj_inti_pengajaran + $insentif_khusus;
+	#ambil data ijd dosen
+	$query = "SELECT * FROM gaji_detail_2
+				WHERE nip = '$nip' and tahun = '$tahun' and bulan = '$periode_bulan'";
 
-	switch ($skema){
-		case 0: 
+	$sql = mysql_query ($query) or die ("error data pengajar: ".mysql_error());
+	$ijd = array();
+	while ($row = mysql_fetch_assoc($sql)) {
+		$ijd[] = $row;
+	}
+
+	switch ($kalban[0]['skema']){
+		case "Skema Lain": 
 			$skema = "Skema Lain";
+			$tunjangan_skema = 0;
+			$honor_Xf = $ijd[0]['imbalan_pengajaran_skema_lain'] + $ijd[0]['imbalan_pengajaran_lintas_fak'];
 			break;
-		case 1: 
-			$skema = "Skema Inti Pengajaran";
+		case "Skema Inti": 
+			$skema = "Skema Inti";
+			$tunjangan_skema = 0;
+			$honor_Xf = $ijd[0]['imbalan_pengajaran_skema_inti_xf'];
 			break;
+		/*
 		case 2: 
-			$skema = "Skema Inti Penelitian";
+			$skema = "Inti Penelitian";
+			$tunjangan_skema = $ts_inti_penelitian;
+			$honor_Xf = $xf_skema_inti;
 			break;
-		case 3: 
-			$skema = "Skema Struktural";
+		*/
+		case "Struktural": 
+			$skema = "Struktural";
+			$tunjangan_skema = $ijd[0]['tunjangan_skema_struktural'];
+			$honor_Xf = $ijd[0]['imbalan_pengajaran_skema_inti_xf'];
 			break;
 	}
 
 	#sertakan library FPDF dan bentuk objek
-	require_once ("../fpdf/fpdf.php");
+	require_once ("fpdf/fpdf.php");
 
 	#tampilkan judul laporan
 	class PDF extends FPDF
@@ -195,7 +136,7 @@ if($_SESSION['hak_akses'] == 1){
 			$this->SetFont('Arial','B','9');
 			$this->Cell(0,4, 'Universitas Indonesia', '0', 1, 'L');
 			$this->Cell(15);
-			$this->Cell(0,4, 'Fakultas Ilmu Sosial dan Ilmu Politik', '0', 1, 'L');
+			$this->Cell(0,4, 'Fakultas Ilmu Administrasi', '0', 1, 'L');
 			$this->Cell(15);
 			$this->Cell(0,4, $_SESSION["programstudi"], '0', 1, 'L');
 			$this->Ln(4);
@@ -224,6 +165,8 @@ if($_SESSION['hak_akses'] == 1){
 	 proses pencetakan data dosen
 	\**************************************/
 
+	$jumlah_ditransfer = $ijd[0]['jumlah_ditransfer_ke_dosen_beban_fak'] + ((100 / 66 * $ijd[0]['imbalan_pengajaran_skema_inti_xu_beban_fak']) - $ijd[0]['imbalan_pengajaran_skema_inti_xu_beban_fak']);
+
 	#tampilkan data tabelnya
 	$pdf->SetFillColor(215,225,245);
 	$pdf->SetTextColor(0);
@@ -236,43 +179,43 @@ if($_SESSION['hak_akses'] == 1){
 	$pdf->SetFont('Arial','','9');
 	$pdf->Cell(40,8,'NIP/NUP',0,0,'L');
 	$pdf->Cell(3,8,':',0,0,'L');
-	$pdf->Cell(50, 8, $nip, 0, 0, 'L');
+	$pdf->Cell(50, 8, $ijd[0]['nip'], 0, 0, 'L');
 	$pdf->Cell(50);
 	$pdf->Cell(50,8,'Jumlah Ditransfer',0,0,'L');
 	$pdf->Cell(3,8,':',0,0,'L');
-	$pdf->Cell(50, 8, number_format($jml_ditransfer), 0, 1, 'L');
+	$pdf->Cell(50, 8, number_format($jumlah_ditransfer), 0, 1, 'L');
 	$pdf->Cell(3);
 	$pdf->Cell(40,8,'Nama',0,0,'L');
 	$pdf->Cell(3,8,':',0,0,'L');
-	$pdf->Cell(50, 8, $nama_pengajar, 0, 0, 'L');
+	$pdf->Cell(50, 8, $ijd[0]['nama_pengajar'], 0, 0, 'L');
 	$pdf->Cell(50);
 	$pdf->Cell(50, 8, 'Nama di Rekening', 0, 0, 'L');
 	$pdf->Cell(3,8,':',0,0,'L');
-	$pdf->Cell(50, 8, $nama_rekening, 0, 1, 'L');
+	$pdf->Cell(50, 8, $ijd[0]['nama_di_rekening'], 0, 1, 'L');
 	$pdf->Cell(3);
-	$pdf->Cell(40,8,'Status Kepegawaian',0,0,'L');
+	$pdf->Cell(40,8,'Skema Pengajaran',0,0,'L');
 	$pdf->Cell(3,8,':',0,0,'L');
 	$pdf->Cell(50, 8, $skema, 0, 0, 'L');
 	$pdf->Cell(50);
 	$pdf->Cell(50, 8, 'Nama Bank', 0, 0, 'L');
 	$pdf->Cell(3,8,':',0,0,'L');
-	$pdf->Cell(50, 8, $nama_bank, 0, 1, 'L');
+	$pdf->Cell(50, 8, $ijd[0]['bank'], 0, 1, 'L');
 	$pdf->Cell(3);
 	$pdf->Cell(40,8,'Jabatan Fungsional',0,0,'L');
 	$pdf->Cell(3,8,':',0,0,'L');
-	$pdf->Cell(50, 8, $jabatan_fungsional, 0, 0, 'L');
+	$pdf->Cell(50, 8, $kalban[0]['jabatanfungsional'], 0, 0, 'L');
 	$pdf->Cell(50);
 	$pdf->Cell(50, 8, 'Nomor Rekening', 0, 0, 'L');
 	$pdf->Cell(3,8,':',0,0,'L');
-	$pdf->Cell(50, 8, $no_rekening, 0, 1, 'L');
+	$pdf->Cell(50, 8, $ijd[0]['no_rekening'], 0, 1, 'L');
 	$pdf->Cell(3);
 	$pdf->Cell(40, 8, 'Status Perkawinan', 0, 0, 'L');
 	$pdf->Cell(3,8,':',0,0,'L');
-	$pdf->Cell(50, 8, $status_nikah, 0, 0, 'L');
+	$pdf->Cell(50, 8, $ijd[0]['status_nikah'], 0, 0, 'L');
 	$pdf->Cell(50);
 	$pdf->Cell(50, 8, 'NPWP', 0, 0, 'L');
 	$pdf->Cell(3,8,':',0,0,'L');
-	$pdf->Cell(50, 8, $npwp, 0, 1, 'L');
+	$pdf->Cell(50, 8, $ijd[0]['npwp'], 0, 1, 'L');
 	$pdf->Ln(4);
 
 	#Honor dan Tunjangan
@@ -284,71 +227,80 @@ if($_SESSION['hak_akses'] == 1){
 	$pdf->Cell(3);
 	$pdf->Cell(52,8,'Dasar Kesejahteraan Setara BHMN',0,0,'L');
 	$pdf->Cell(3,8,':',0,0,'L');
-	$pdf->Cell(20, 8, number_format($dk_bhmn), 0, 0, 'R');
+	$pdf->Cell(20, 8, number_format($ijd[0]['tambahan_dasar_kesjahteraan']), 0, 0, 'R');
 	$pdf->Cell(20);
 	$pdf->Cell(52,8,'Total Honor Xu',0,0,'L');
 	$pdf->Cell(3,8,':',0,0,'L');
-	$pdf->Cell(20, 8, number_format($xu_skema_inti), 0, 0, 'R');
+	$pdf->Cell(20, 8, number_format(100 / 66 * $ijd[0]['imbalan_pengajaran_skema_inti_xu_beban_fak']), 0, 0, 'R');  //tambahan 34% dari universitas
 	$pdf->Cell(20);
-	$pdf->Cell(57,8,'Tunjangan Kesehatan (Inhealth)',0,0,'L');
+	$pdf->Cell(57,8,'Insentif Kehadiran',0,0,'L');
 	$pdf->Cell(3,8,':',0,0,'L');
-	$pdf->Cell(20,8, number_format($ts_kesehatan), 0, 1, 'R');
+	$pdf->Cell(20,8, number_format($ijd[0]['insentif_hadir_kerja']), 0, 1, 'R');
 	$pdf->Cell(3);
-	$pdf->Cell(52,8,'Tunjangan Skema Inti Pengajaran',0,0,'L');
+	$pdf->Cell(52,8,'Tunjangan Keluarga',0,0,'L');  //fix
 	$pdf->Cell(3,8,':',0,0,'L');
-	$pdf->Cell(20, 8, number_format($ts_inti_pengajaran), 0, 0, 'R');
+	$pdf->Cell(20, 8, number_format($ijd[0]['tunjangan_keluarga_bhmn_beban_ui']), 0, 0, 'R');
 	$pdf->Cell(20);
-	$pdf->Cell(52,8,'Total Honor Xf Skema Inti',0,0,'L');
+	$pdf->Cell(52,8,'Total Honor Xf '.$skema,0,0,'L');
 	$pdf->Cell(3,8,':',0,0,'L');
-	$pdf->Cell(20, 8, number_format($xf_skema_inti), 0, 0, 'R');
+	$pdf->Cell(20, 8, number_format($honor_Xf), 0, 0, 'R');
 	$pdf->Cell(20);
-	$pdf->Cell(57,8,'Tunjangan Pajak',0,0,'L');
+	$pdf->Cell(57,8,'Insentif GBPK',0,0,'L');
 	$pdf->Cell(3,8,':',0,0,'L');
-	$pdf->Cell(20, 8, number_format($tj_pajak), 0, 1, 'R');
+	$pdf->Cell(20, 8, number_format($ijd[0]['insentif_gbpk']), 0, 1, 'R');
 	$pdf->Cell(3);
-	$pdf->Cell(52,8,'Tunjangan Skema Inti Penelitian',0,0,'L');
+	$pdf->Cell(52,8,'Tunjangan Fungsional',0,0,'L');  //fix
 	$pdf->Cell(3,8,':',0,0,'L');
-	$pdf->Cell(20, 8, number_format($ts_inti_penelitian), 0, 0, 'R');
+	$pdf->Cell(20, 8, number_format($ijd[0]['tunjangan_fungsional_bhmn_beban_fak']), 0, 0, 'R');
 	$pdf->Cell(20);
-	$pdf->Cell(52,8,'Total Honor Xf Skema Lain',0,0,'L');
+	$pdf->Cell(52,8,'Total Honor Menguji',0,0,'L');
 	$pdf->Cell(3,8,':',0,0,'L');
-	$pdf->Cell(20, 8, number_format($tot_xf_skema_lain), 0, 0, 'R');
+	$pdf->Cell(20, 8, number_format($ijd[0]['honor_menguji']), 0, 0, 'R');
 	$pdf->Cell(20);
-	$pdf->Cell(57,8,'Honor Bruto',0,0,'L');
+	$pdf->Cell(57,8,'Tunjangan Kesehatan',0,0,'L');
 	$pdf->Cell(3,8,':',0,0,'L');
-	$pdf->Cell(20, 8, number_format($honor_bruto), 0, 1, 'R');
+	$pdf->Cell(20, 8, number_format($ijd[0]['tamb_kesjah_kesehatan']), 0, 1, 'R');
 	$pdf->Cell(3);
-	$pdf->Cell(52,8,'Tunjangan Skema Struktural',0,0,'L');
+	$pdf->Cell(52,8,'Tunjangan '.$skema,0,0,'L');  //fix
 	$pdf->Cell(3,8,':',0,0,'L');
-	$pdf->Cell(20, 8, number_format($ts_struktural), 0, 0, 'R');
+	$pdf->Cell(20, 8, number_format($tunjangan_skema), 0, 0, 'R');
 	$pdf->Cell(20);
-	$pdf->Cell(52,8,'Honor Lainnya',0,0,'L');
+	$pdf->Cell(52,8,'Total Honor Bimbingan',0,0,'L');
 	$pdf->Cell(3,8,':',0,0,'L');
-	$pdf->Cell(20, 8, number_format($honor_bimbingan), 0, 0, 'R');
+	$pdf->Cell(20, 8, number_format($ijd[0]['honor_pembimbingan']), 0, 0, 'R');
 	$pdf->Cell(20);
-	$pdf->Cell(57,8,'Pajak',0,0,'L');
+	$pdf->Cell(57,8,'Kurang/Lebih Bayar',0,0,'L');
 	$pdf->Cell(3,8,':',0,0,'L');
-	$pdf->Cell(20, 8, number_format($pajak), 0, 1, 'R');
+	$pdf->Cell(20, 8, number_format($ijd[0]['kurang_lebih_bayar_bulan_sebelumnya']), 0, 1, 'R');
 	$pdf->Cell(3);
 	$pdf->Cell(52,8,'Tunjangan SAF/DGBF',0,0,'L');
 	$pdf->Cell(3,8,':',0,0,'L');
-	$pdf->Cell(20, 8, number_format($tj_saf), 0, 0, 'R');
+	$pdf->Cell(20, 8, number_format($ijd[0]['tunjangan_saf_dgbf']), 0, 0, 'R');
 	$pdf->Cell(20);
-	$pdf->Cell(52,8,'Tunda Bayar Bulan Sebelumnya',0,0,'L');
+
+	if ($tahun = 2017 and $periode_bulan = '02') {
+		$pdf->Cell(52,8,'Komponen Remunerasi Khusus',0,0,'L');
+		$pdf->Cell(3,8,':',0,0,'L');
+		$pdf->Cell(20, 8, number_format($ijd[0]['komponen_remunerasi_khusus']), 0, 0, 'R');
+		$pdf->Cell(20);
+	} else {
+		$pdf->Cell(52,8,' ',0,0,'L');
+		$pdf->Cell(3,8,' ',0,0,'L');
+		$pdf->Cell(20, 8, ' ', 0, 0, 'R');
+		$pdf->Cell(20);			
+	}
+
+	$pdf->Cell(57,8,'Jumlah Ditransfer',0,0,'L');
 	$pdf->Cell(3,8,':',0,0,'L');
-	$pdf->Cell(20, 8, number_format($tunda_bayar), 0, 0, 'R');
-	$pdf->Cell(20);
-	$pdf->Cell(57,8,'Honor Neto',0,0,'L');
-	$pdf->Cell(3,8,' ',0,0,'L');
-	$pdf->Cell(20, 8, number_format($honor_neto), 0, 1, 'R');
+	$pdf->Cell(20, 8, number_format($jumlah_ditransfer ), 0, 1, 'R');
 	$pdf->Cell(3);
-	$pdf->Cell(52,8,'Tunjangan Jabatan Struktural',0,0,'L');
+	$pdf->Cell(52,8,'Honor Tugas Rutin Non Struktural',0,0,'L');  //fix
 	$pdf->Cell(3,8,':',0,0,'L');
-	$pdf->Cell(20, 8, number_format($tj_jabatan), 0, 0, 'R');
+	$pdf->Cell(20, 8, number_format($ijd[0]['honor_tugas_rutin_non_struktural']), 0, 0, 'R');
 	$pdf->Cell(20);
-	$pdf->Cell(52,8,'Kurang/Lebih Bayar',0,0,'L');
-	$pdf->Cell(3,8,':',0,0,'L');
-	$pdf->Cell(20, 8, number_format($kl_bayar), 0, 0, 'R');
+	$pdf->Cell(52,8,' ',0,0,'L');
+	$pdf->Cell(3,8,' ',0,0,'L');
+	$pdf->Cell(20, 8, ' ', 0, 0, 'R');
 
 	$pdf->Ln(20);
 	$pdf->SetFont('Arial','BUI','8');
@@ -357,7 +309,7 @@ if($_SESSION['hak_akses'] == 1){
 	$pdf->Cell(80,5,'- Nomor Rekening yang dipakai adalah nomor Rekening Fakultas Induk',0,1,'L');
 	$pdf->Cell(80,5,'- Maksimal 4 SKS untuk Dosen dengan Skema Struktural',0,1,'L');
 	$pdf->Cell(80,5,'- Maksimal 6 SKS untuk Dosen Inti Penelitian',0,1,'L');
-	$pdf->Cell(80,5,'- Maksimal 18 SKS untuk Dosen Inti Pengajaran',0,1,'L');
+	$pdf->Cell(80,5,'- Maksimal 8 SKS untuk Dosen Inti Pengajaran',0,1,'L');
 	$pdf->Cell(80,5,'- Maksimal 4 SKS untuk Dosen Skema Lain (Dosen Tidak Tetap/Dosen Luar Biasa/Pensiun)',0,1,'L');
 	$pdf->Cell(80,5,'- Pemilihan berdasarkan SKS dengan koefisien tertinggi sampai terendah',0,1,'L');
 	$pdf->Cell(80,5,'- Rincian Data Honor Pengajaran Terlampir',0,1,'L');
@@ -378,7 +330,7 @@ if($_SESSION['hak_akses'] == 1){
 	\**************************************/
 
 	#ambil data ikut hitung = 1
-	$query1 = "SELECT programstudi, program, bobotkontribusi, bobotkontribusi/100*sks as sksekivalen, kodemk, namamatakuliah, sks, namakelas, hadiraktual, kehadiranseharusnya, honorxuskemainti, honorxfskemainti + honorxfskemalain + honorxflintasfak as honorxf, totalhonor
+	$query1 = "SELECT programstudi, program, bobotkontribusi, sksekivalen, sksdisetujui, namamatakuliah, sks, namakelas, hadiraktual, kehadiranseharusnya, honorxuskemainti, honorxfskemainti + honorxfskemalain + honorxflintasfak as honorxf, totalhonor
 				FROM kalban 
 				WHERE nip = '$nip' and ikuthitung = 1 and tahun = $tahun and bulan = '$periode_bulan' and kodepdpt=0
 				ORDER BY program, programstudi, namamatakuliah, kodekelas";
@@ -393,7 +345,7 @@ if($_SESSION['hak_akses'] == 1){
 	$subtotalhonorxu1 = 0;
 	$subtotalhonorxf1 = 0;
 	$subtotalhonor1 = 0;
-	$sksEkivalen = 0;
+	$sksEkivalen1 = 0;
 	$i = 0;
 	$rows1 = mysql_num_rows($sql1);
 
@@ -405,7 +357,7 @@ if($_SESSION['hak_akses'] == 1){
 	}
 
 	#ambil data ikut hitung = 0
-	$query2 = "SELECT programstudi, program, bobotkontribusi, bobotkontribusi/100*sks as sksekivalen, kodemk, namamatakuliah, sks, namakelas, hadiraktual, kehadiranseharusnya, honorxuskemainti, honorxfskemainti + honorxfskemalain + honorxflintasfak as honorxf, totalhonor
+	$query2 = "SELECT programstudi, program, bobotkontribusi, sksekivalen, sksdisetujui, namamatakuliah, sks, namakelas, hadiraktual, kehadiranseharusnya, honorxuskemainti, honorxfskemainti + honorxfskemalain + honorxflintasfak as honorxf, totalhonor
 				FROM kalban 
 				WHERE nip = '$nip' and ikuthitung = 0 and tahun = $tahun and bulan = '$periode_bulan' and kodepdpt=0
 				ORDER BY program, programstudi, namamatakuliah, kodekelas";
@@ -420,7 +372,7 @@ if($_SESSION['hak_akses'] == 1){
 	$subtotalhonorxu2 = 0;
 	$subtotalhonorxf2 = 0;
 	$subtotalhonor2 = 0;
-	$sksEkivalen = 0;
+	$sksEkivalen2 = 0;
 	$i = 0;
 	$rows2 = mysql_num_rows($sql2);
 
@@ -437,7 +389,7 @@ if($_SESSION['hak_akses'] == 1){
 		array("label"=>"Program", "length"=>17, "align"=>"L", "align2"=>"L"),
 		array("label"=>"Bobot Kontribusi", "length"=>15, "align"=>"L", "align2"=>"C"),
 		array("label"=>"SKS Ekivalen", "length"=>13, "align"=>"C", "align2"=>"C"),
-		array("label"=>"Kode Mata Kuliah", "length"=>15, "align"=>"C", "align2"=>"C"),
+		array("label"=>"SKS Disetujui", "length"=>15, "align"=>"C", "align2"=>"C"),
 		array("label"=>"Nama Mata Kuliah", "length"=>62, "align"=>"C", "align2"=>"L"),
 		array("label"=>"SKS", "length"=>8, "align"=>"C", "align2"=>"C"),
 		array("label"=>"Nama Kelas", "length"=>32, "align"=>"C", "align2"=>"L"),
@@ -474,7 +426,7 @@ if($_SESSION['hak_akses'] == 1){
 	$pdf->Cell(17,4, 'Jenjang', 1, 0, 'C', true);
 	$pdf->Cell(15,4, 'Kontribusi', 1, 0, 'C', true);
 	$pdf->Cell(13,4, 'Ekivalen', 1, 0, 'C', true);
-	$pdf->Cell(15,4, 'Kode MK', 1, 0, 'C', true);
+	$pdf->Cell(15,4, 'Disetujui', 1, 0, 'C', true);
 	$pdf->Cell(62,4, 'Nama Mata Kuliah', 1, 0, 'C', true);
 	$pdf->Cell(8,4, 'SKS', 1, 0, 'C', true);
 	$pdf->Cell(32,4, 'Kelas', 1, 0, 'C', true);
@@ -659,8 +611,8 @@ if($_SESSION['hak_akses'] == 1){
 	$data = array();
 	$query = "	SELECT departemen, program, jenis_bimbingan, honor
 				FROM bimbingan a, organisasi b
-				WHERE $kodeorganisasi and tahun = $tahun and bulan = $periode_bulan and a.nip = '$nip' and kodeorganisasi = kd_organisasi";
-	$sql = mysql_query ($query) or die ("error data bimbingan: ".mysql_error());
+				WHERE tahun = '$tahun' and bulan = '$periode_bulan' and a.nip = '$nip' and kodeorganisasi = kd_organisasi";
+	$sql = mysql_query ($query) or die ("error data bimbingan - 1: ".mysql_error());
 	$rows = mysql_num_rows($sql);
 
 	if ($rows > 0){
@@ -744,8 +696,8 @@ if($_SESSION['hak_akses'] == 1){
 	$data = array();
 	$query = "	SELECT departemen, program, jenis_bimbingan, honor
 					FROM bimbingan a, organisasi b
-					WHERE $kodeorganisasi and tahun = $tahun and bulan = $periode_bulan and a.nip = '$nip' and kodeorganisasi = kd_organisasi and flag = 1";
-	$sql = mysql_query ($query) or die ("error data bimbingan: ".mysql_error());
+					WHERE tahun = $tahun and bulan = '$periode_bulan' and a.nip = '$nip' and kodeorganisasi = kd_organisasi and flag = 1";
+	$sql = mysql_query ($query) or die ("error data bimbingan - 2: ".mysql_error());
 	$rows = mysql_num_rows($sql);
 
 	if ($rows > 0){
@@ -832,7 +784,7 @@ $judullaporan = "Rincian Data Honor Pengajaran Periode $bulan $tahun";
 $_SESSION["judullaporan"] = $judullaporan;
 
 #ambil data ikut hitung = 1
-$query1 = "SELECT programstudi, program, bobotkontribusi, bobotkontribusi/100*sks as sksekivalen, kodemk, namamatakuliah, sks, namakelas, hadiraktual, kehadiranseharusnya, honorxuskemainti, honorxfskemainti + honorxfskemalain + honorxflintasfak as honorxf, totalhonor
+$query1 = "SELECT programstudi, program, bobotkontribusi, sksekivalen, sksdisetujui, namamatakuliah, sks, namakelas, hadiraktual, kehadiranseharusnya, honorxuskemainti, honorxfskemainti + honorxfskemalain + honorxflintasfak as honorxf, totalhonor
 			FROM kalban 
 			WHERE $kodeorganisasi and nip = '$nip' and ikuthitung = '1' and tahun = $tahun and bulan='$periode_bulan' and kodepdpt=0
 			ORDER BY program, programstudi, namamatakuliah, kodekelas";
@@ -857,7 +809,7 @@ for ($i; $i<$rows1; $i++) {
 }
 
 #ambil data ikut hitung = 0
-$query2 = "SELECT programstudi, program, bobotkontribusi, bobotkontribusi/100*sks as sksekivalen, kodemk, namamatakuliah, sks, namakelas, hadiraktual, kehadiranseharusnya, honorxuskemainti, honorxfskemainti + honorxfskemalain + honorxflintasfak as honorxf, totalhonor
+$query2 = "SELECT programstudi, program, bobotkontribusi, sksekivalen, sksdisetujui, namamatakuliah, sks, namakelas, hadiraktual, kehadiranseharusnya, honorxuskemainti, honorxfskemainti + honorxfskemalain + honorxflintasfak as honorxf, totalhonor
 			FROM kalban 
 			WHERE $kodeorganisasi and nip = '$nip' and ikuthitung in ('0','') and tahun = $tahun and bulan = '$periode_bulan' and kodepdpt=0
 			ORDER BY program, programstudi, namamatakuliah, kodekelas";
@@ -887,7 +839,7 @@ $header = array(
 	array("label"=>"Program", "length"=>17, "align"=>"L", "align2"=>"L"),
 	array("label"=>"Bobot Kontribusi", "length"=>15, "align"=>"L", "align2"=>"C"),
 	array("label"=>"SKS Ekivalen", "length"=>13, "align"=>"C", "align2"=>"C"),
-	array("label"=>"Kode Mata Kuliah", "length"=>15, "align"=>"C", "align2"=>"C"),
+	array("label"=>"SKS Disetujui", "length"=>15, "align"=>"C", "align2"=>"C"),
 	array("label"=>"Nama Mata Kuliah", "length"=>62, "align"=>"C", "align2"=>"L"),
 	array("label"=>"SKS", "length"=>8, "align"=>"C", "align2"=>"C"),
 	array("label"=>"Nama Kelas", "length"=>32, "align"=>"C", "align2"=>"L"),
@@ -913,7 +865,7 @@ class PDF extends FPDF
 		$this->SetFont('Arial','B','8');
 		$this->Cell(0,4, 'Universitas Indonesia', '0', 1, 'L');
 		$this->Cell(15);
-		$this->Cell(0,4, 'Fakultas Ilmu Sosial dan Ilmu Politik', '0', 1, 'L');
+		$this->Cell(0,4, 'Fakultas Ilmu Administrasi', '0', 1, 'L');
 		$this->Cell(15);
 		$this->Cell(0,4, $_SESSION["programstudi"], '0', 1, 'L');
 		$this->Ln(4);
@@ -948,7 +900,7 @@ class PDF extends FPDF
 		$this->Cell(17,5, 'Jenjang', 1, 0, 'C', true);
 		$this->Cell(15,5, 'Kontribusi', 1, 0, 'C', true);
 		$this->Cell(13,5, 'Ekivalen', 1, 0, 'C', true);
-		$this->Cell(15,5, 'Kode MK', 1, 0, 'C', true);
+		$this->Cell(15,5, 'Disetujui', 1, 0, 'C', true);
 		$this->Cell(62,5, 'Nama Mata Kuliah', 1, 0, 'C', true);
 		$this->Cell(8,5, 'SKS', 1, 0, 'C', true);
 		$this->Cell(32,5, 'Kelas', 1, 0, 'C', true);
@@ -1042,7 +994,7 @@ if ($rows2 > 0){
 	$pdf->Cell(17,5, 'Jenjang', 1, 0, 'C', true);
 	$pdf->Cell(15,5, 'Kontribusi', 1, 0, 'C', true);
 	$pdf->Cell(13,5, 'Ekivalen', 1, 0, 'C', true);
-	$pdf->Cell(15,5, 'Kode MK', 1, 0, 'C', true);
+	$pdf->Cell(15,5, 'Disetujui', 1, 0, 'C', true);
 	$pdf->Cell(62,5, 'Nama Mata Kuliah', 1, 0, 'C', true);
 	$pdf->Cell(8,5, 'SKS', 1, 0, 'C', true);
 	$pdf->Cell(32,5, 'Kelas', 1, 0, 'C', true);
@@ -1137,5 +1089,5 @@ if ($rows2 > 0){
 
 #output file PDF
 $pdf->Output();
-} 
+}
 ?>
