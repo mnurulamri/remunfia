@@ -67,6 +67,10 @@ switch($bulan)
 		break;
 }
 
+//hapus recor lama
+$sql = "DELETE FROM kalban WHERE tahun = '$tahun' AND bulan = '$vbulan'";
+mysql_query($sql) or die(mysql_error());
+
 // membaca file excel yang diupload
 echo 'Nama File = '.$fileName;
 require_once "simplexlsx.class.php";
@@ -163,6 +167,7 @@ for($i=1; $i<sizeof($excel); $i++){
 	$Skema =  $excel[$i][7];
 	$BobotKontribusi =  $excel[$i][8];
 	$SKSEkivalen =  $excel[$i][9];
+	$SKSDisetujui =  $excel[$i][10];
 	$TotSKSsiak =  $excel[$i][16];
 	$TotSKSOK =  $excel[$i][17];
 	$UnitFakultas =  $excel[$i][17];
@@ -297,6 +302,7 @@ for($i=1; $i<sizeof($excel); $i++){
 				Skema,
 				BobotKontribusi,
 				SKSEkivalen,
+				SKSDisetujui,
 				KodeOrganisasi,
 				ProgramStudi,
 				Jenjang,
@@ -344,6 +350,7 @@ for($i=1; $i<sizeof($excel); $i++){
 				'$Skema',
 				'$BobotKontribusi',
 				'$SKSEkivalen',
+				'$SKSDisetujui',
 				'$KodeOrganisasi',
 				'$ProgramStudi',
 				'$Jenjang',
@@ -358,10 +365,10 @@ for($i=1; $i<sizeof($excel); $i++){
 				'$PengantarBhsAsing',
 				'$HadirAktual',
 				'$KehadiranSeharusnya',
-				'$SatuanKehadiran',
+				
 				'$HadirAktualAsing',
 				'$KehadiranSeharusnyaAsing',
-				'$SatuanHadirAsing',
+				
 				'$HonorXuSkemaInti',
 				'$HonorXfSkemaInti',
 				'$HonorXfSkemaLain',
